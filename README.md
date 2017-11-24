@@ -10,9 +10,11 @@ Usage:
 * Press and hold `P` to see the position of the item under the crosshair
 * Press and hold `R` to see the rotation of the item under the crosshair
 * Press and hold `L` to see the scene name of the item under the crosshair
+* Press and hold `K` to see the loot table name of the container under the crosshair (does nothing if the item under the crosshair is no container)
 
 * Press `CTRL+P` or `CTRL+R` to copy a complete item spawn definition for the item under the crosshair to your clipboard
 * Press `CTRL+L` to copy a complete scene definition to your clipboard
+* Press `CTRL+K` to copy a complete loot table definition to your clipboard
 
 
 For installation instructions see [Releases](https://github.com/WulfMarius/Coordinates-Grabber/releases/latest)

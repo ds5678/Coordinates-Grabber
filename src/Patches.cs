@@ -11,6 +11,29 @@ namespace CoordinatesGrabber
         }
     }
 
+    internal class LootTableHelper
+    {
+        internal static string GetLootTableName(Container container)
+        {
+            if (container == null)
+            {
+                return null;
+            }
+
+            if (container.IsLocked() && container.m_LockedLootTablePrefab != null)
+            {
+                return container.m_LockedLootTablePrefab.name;
+            }
+
+            if (container.m_LootTablePrefab != null)
+            {
+                return container.m_LootTablePrefab.name;
+            }
+
+            return null;
+        }
+    }
+
     [HarmonyPatch(typeof(InputManager), "ProcessInput")]
     internal class InputManager_ProcessInput
     {
@@ -31,7 +54,7 @@ namespace CoordinatesGrabber
 
                 var line = "item=" + gameObject.name + " p=" + FormatHelper.FormatVector(gameObject.transform.position) + " r=" + FormatHelper.FormatVector(gameObject.transform.rotation.eulerAngles) + " c=100";
                 Debug.Log(line);
-                CopyToClipboard(line, "Item definition");
+                CopyToClipboard(line, "Item Definition");
                 return;
             }
 
@@ -39,7 +62,27 @@ namespace CoordinatesGrabber
             {
                 var line = "scene=" + GameManager.m_ActiveScene;
                 Debug.Log(line);
-                CopyToClipboard(line, "Scene definition");
+                CopyToClipboard(line, "Scene Definition");
+                return;
+            }
+
+            if (Input.GetKeyDown(KeyCode.K))
+            {
+                GameObject gameObject = GameManager.GetPlayerManagerComponent().m_InteractiveObjectNearCrosshair;
+                if (gameObject == null)
+                {
+                    return;
+                }
+
+                Container container = gameObject.GetComponentInChildren<Container>();
+                if (container == null)
+                {
+                    return;
+                }
+
+                var line = "loottable=" + LootTableHelper.GetLootTableName(container);
+                Debug.Log(line);
+                CopyToClipboard(line, "LootTable Definition");
                 return;
             }
         }
@@ -75,6 +118,16 @@ namespace CoordinatesGrabber
             if (Input.GetKey(KeyCode.L))
             {
                 __result += "\nscene = " + GameManager.m_ActiveScene;
+                return;
+            }
+
+            if (Input.GetKey(KeyCode.K))
+            {
+                Container container = __instance.m_InteractiveObjectUnderCrosshair.GetComponentInChildren<Container>();
+                if (container != null)
+                {
+                    __result += "\nloottable = " + LootTableHelper.GetLootTableName(container);
+                }
                 return;
             }
         }

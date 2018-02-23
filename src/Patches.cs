@@ -11,29 +11,6 @@ namespace CoordinatesGrabber
         }
     }
 
-    internal class LootTableHelper
-    {
-        internal static string GetLootTableName(Container container)
-        {
-            if (container == null)
-            {
-                return null;
-            }
-
-            if (container.IsLocked() && container.m_LockedLootTablePrefab != null)
-            {
-                return container.m_LockedLootTablePrefab.name;
-            }
-
-            if (container.m_LootTablePrefab != null)
-            {
-                return container.m_LootTablePrefab.name;
-            }
-
-            return null;
-        }
-    }
-
     [HarmonyPatch(typeof(InputManager), "ProcessInput")]
     internal class InputManager_ProcessInput
     {
@@ -89,12 +66,32 @@ namespace CoordinatesGrabber
 
         private static void CopyToClipboard(string line, string informationType)
         {
-            TextEditor editor = new TextEditor();
-            editor.text = line;
-            editor.SelectAll();
-            editor.Copy();
+            GUIUtility.systemCopyBuffer = line;
 
             HUDMessage.AddMessage(informationType + " copied to clipboard");
+        }
+    }
+
+    internal class LootTableHelper
+    {
+        internal static string GetLootTableName(Container container)
+        {
+            if (container == null)
+            {
+                return null;
+            }
+
+            if (container.IsLocked() && container.m_LockedLootTablePrefab != null)
+            {
+                return container.m_LockedLootTablePrefab.name;
+            }
+
+            if (container.m_LootTablePrefab != null)
+            {
+                return container.m_LootTablePrefab.name;
+            }
+
+            return null;
         }
     }
 

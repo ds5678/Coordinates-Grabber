@@ -4,9 +4,16 @@ namespace CoordinatesGrabber
 {
     public class Implementation
     {
+        public const string NAME = "Coordinates-Grabber";
+
         public static void OnLoad()
         {
-            Debug.Log("[Coordinates-Grabber]: Version " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
+            Log("Version " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
+        }
+
+        internal static void Log(string message)
+        {
+            Debug.LogFormat("[" + NAME + "] {0}", message);
         }
     }
 }

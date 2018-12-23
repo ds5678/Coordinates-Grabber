@@ -30,7 +30,7 @@ namespace CoordinatesGrabber
                 }
 
                 var line = "item=" + gameObject.name + " p=" + FormatHelper.FormatVector(gameObject.transform.position) + " r=" + FormatHelper.FormatVector(gameObject.transform.rotation.eulerAngles) + " c=100";
-                Debug.Log(line);
+                Implementation.Log(line);
                 CopyToClipboard(line, "Item Definition");
                 return;
             }
@@ -38,7 +38,7 @@ namespace CoordinatesGrabber
             if (Input.GetKeyDown(KeyCode.L))
             {
                 var line = "scene=" + GameManager.m_ActiveScene;
-                Debug.Log(line);
+                Implementation.Log(line);
                 CopyToClipboard(line, "Scene Definition");
                 return;
             }
@@ -58,7 +58,7 @@ namespace CoordinatesGrabber
                 }
 
                 var line = "loottable=" + LootTableHelper.GetLootTableName(container);
-                Debug.Log(line);
+                Implementation.Log(line);
                 CopyToClipboard(line, "LootTable Definition");
                 return;
             }

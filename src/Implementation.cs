@@ -1,19 +1,20 @@
 ﻿using UnityEngine;
+using MelonLoader;
 
 namespace CoordinatesGrabber
 {
-    public class Implementation
+    public class Implementation : MelonMod
     {
         public const string NAME = "Coordinates-Grabber";
 
-        public static void OnLoad()
+        public override void OnApplicationStart()
         {
-            Log("Version " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
+            Debug.Log($"[{Info.Name}] Version {Info.Version} loaded!");
         }
 
         internal static void Log(string message)
         {
-            Debug.LogFormat("[" + NAME + "] {0}", message);
+            Debug.Log(string.Format("[" + NAME + "] {0}", message));
         }
     }
 }

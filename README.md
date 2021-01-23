@@ -3,8 +3,8 @@
 
 This is a utility mod for **The Long Dark** by Hinterland Studio, Inc.
 
-It allows to see / copy the position, rotation and scene of interactive items.<br/>
-The data will be copied in a format suitable for [gear spawns definitions](https://github.com/ds5678/ModComponent/wiki/Gear-Spawns) for ModComponent when it's ready.
+It allows you to see / copy the name, position, rotation and scene of interactive items.<br/>
+The data will be copied in a format suitable for [gear spawns definitions](https://github.com/ds5678/ModComponent/wiki/Gear-Spawns) for ModComponent (when it's ready).
 
 ## Usage
 

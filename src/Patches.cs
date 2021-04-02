@@ -9,7 +9,10 @@ namespace CoordinatesGrabber
     {
         internal static string FormatVector(Vector3 vector)
         {
-            return string.Format("{0:F4},{1:F4},{2:F4}", vector.x, vector.y, vector.z);
+            string x = vector.x.ToString("F4", System.Globalization.CultureInfo.InvariantCulture);
+            string y = vector.y.ToString("F4", System.Globalization.CultureInfo.InvariantCulture);
+            string z = vector.z.ToString("F4", System.Globalization.CultureInfo.InvariantCulture);
+            return string.Format("{0},{1},{2}", x, y, z);
         }
     }
 

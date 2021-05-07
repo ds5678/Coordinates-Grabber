@@ -33,7 +33,7 @@ namespace CoordinatesGrabber
 
         internal static void ApplyKeyPress(GrabberMode modeAssociatedWithKey)
         {
-            if(currentMode == modeAssociatedWithKey)
+            if (currentMode == modeAssociatedWithKey)
             {
                 currentMode = GrabberMode.None;
             }
@@ -49,7 +49,7 @@ namespace CoordinatesGrabber
             {
                 return Modulo(initialValue + 6);
             }
-            else if(initialValue >= 6)
+            else if (initialValue >= 6)
             {
                 return Modulo(initialValue - 6);
             }
@@ -61,7 +61,7 @@ namespace CoordinatesGrabber
 
         internal static void ApplyScroll()
         {
-            if (GrabberSettings.settings.useMiddleMouseButton)
+            if (Settings.options.useMiddleMouseButton && !GameManager.GetPlayerManagerComponent().IsInPlacementMode())
             {
                 int delta = (int)CustomInput.MouseScrollDelta[1];
                 int currentPosition = (int)currentMode;
@@ -71,33 +71,33 @@ namespace CoordinatesGrabber
         }
     }
 
-    [HarmonyPatch(typeof(GameManager),"Update")]
+    [HarmonyPatch(typeof(GameManager), "Update")]
     internal class CheckForKeyPresses
     {
         private static void Postfix()
         {
-            if (GrabberSettings.settings.useKeyPresses && InputManager.GetKeyDown(InputManager.m_CurrentContext, GrabberSettings.nameKey))
+            if (Settings.options.useKeyPresses && InputManager.GetKeyDown(InputManager.m_CurrentContext, Settings.options.nameKey))
             {
                 KeyTracker.ApplyKeyPress(GrabberMode.Name);
             }
-            if (GrabberSettings.settings.useKeyPresses && InputManager.GetKeyDown(InputManager.m_CurrentContext, GrabberSettings.positionKey))
+            if (Settings.options.useKeyPresses && InputManager.GetKeyDown(InputManager.m_CurrentContext, Settings.options.positionKey))
             {
                 KeyTracker.ApplyKeyPress(GrabberMode.Position);
             }
-            if (GrabberSettings.settings.useKeyPresses && InputManager.GetKeyDown(InputManager.m_CurrentContext, GrabberSettings.rotationKey))
+            if (Settings.options.useKeyPresses && InputManager.GetKeyDown(InputManager.m_CurrentContext, Settings.options.rotationKey))
             {
                 KeyTracker.ApplyKeyPress(GrabberMode.Rotation);
             }
-            if (GrabberSettings.settings.useKeyPresses && InputManager.GetKeyDown(InputManager.m_CurrentContext, GrabberSettings.sceneKey))
+            if (Settings.options.useKeyPresses && InputManager.GetKeyDown(InputManager.m_CurrentContext, Settings.options.sceneKey))
             {
                 KeyTracker.ApplyKeyPress(GrabberMode.Scene);
             }
-            if (GrabberSettings.settings.useKeyPresses && InputManager.GetKeyDown(InputManager.m_CurrentContext, GrabberSettings.lootTableKey))
+            if (Settings.options.useKeyPresses && InputManager.GetKeyDown(InputManager.m_CurrentContext, Settings.options.lootTableKey))
             {
                 KeyTracker.ApplyKeyPress(GrabberMode.LootTable);
             }
             KeyTracker.ApplyScroll();
-            if(!GrabberSettings.settings.useKeyPresses && !GrabberSettings.settings.useMiddleMouseButton && KeyTracker.currentMode != GrabberMode.None)
+            if (!Settings.options.useKeyPresses && !Settings.options.useMiddleMouseButton && KeyTracker.currentMode != GrabberMode.None)
             {
                 KeyTracker.ApplyKeyPress(GrabberMode.None);
             }
@@ -110,10 +110,10 @@ namespace CoordinatesGrabber
         public static void Postfix()
         {
             bool controlDown = InputManager.GetKeyDown(InputManager.m_CurrentContext, KeyCode.RightControl);
-            bool middleMouseDown = GrabberSettings.settings.useMiddleMouseButton && CustomInput.GetMouseButtonDown(2);
-            bool altDown = GrabberSettings.settings.useKeyPresses && (CustomInput.GetKeyDown(KeyCode.LeftAlt) || CustomInput.GetKeyDown(KeyCode.RightAlt));
+            bool middleMouseDown = Settings.options.useMiddleMouseButton && CustomInput.GetMouseButtonDown(2);
+            bool altDown = Settings.options.useKeyPresses && (CustomInput.GetKeyDown(KeyCode.LeftAlt) || CustomInput.GetKeyDown(KeyCode.RightAlt));
             bool saveToFile = middleMouseDown || altDown;
-            if (!controlDown && !saveToFile )
+            if (!controlDown && !saveToFile)
             {
                 return;
             }
@@ -164,7 +164,6 @@ namespace CoordinatesGrabber
         }
         private static void AppendToFile(string line, string informationType)
         {
-            //StreamWriter file = File.AppendText(Path.Combine(Implementation.GetModsFolderPath(), @"templates\test.txt"));
             StreamWriter file = File.AppendText(Path.Combine(Implementation.GetModsFolderPath(), @"Coordinates-Grabber-Output.txt"));
             file.WriteLine(line);
             file.Close();
@@ -211,6 +210,8 @@ namespace CoordinatesGrabber
     {
         public static void Postfix(PlayerManager __instance, ref string __result)
         {
+            if (__instance?.m_InteractiveObjectUnderCrosshair?.name is null) return;
+            if (__result is null || string.IsNullOrWhiteSpace(GameManager.m_ActiveScene)) return;
             switch (KeyTracker.currentMode)
             {
                 case GrabberMode.Name:
@@ -233,7 +234,7 @@ namespace CoordinatesGrabber
                     }
                     break;
             }
-            if (GrabberSettings.settings.enableDelete && CustomInput.GetKeyDown(KeyCode.Delete))
+            if (Settings.options.enableDelete && CustomInput.GetKeyDown(KeyCode.Delete))
             {
                 UnityEngine.Object.Destroy(__instance.m_InteractiveObjectUnderCrosshair);
             }

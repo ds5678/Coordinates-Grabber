@@ -12,7 +12,7 @@ namespace CoordinatesGrabber
         public override void OnApplicationStart()
         {
             Debug.Log($"[{Info.Name}] Version {Info.Version} loaded!");
-            GrabberSettings.OnLoad();
+            Settings.OnLoad();
         }
 
         internal static void Log(string message)

@@ -60,21 +60,22 @@ namespace CoordinatesGrabber
         {
             options = new GrabberSettings();
             options.AddToModSettings("Coordinate Grabber");
+            SetFieldVisible(options.useKeyPresses);
         }
         internal static void SetFieldVisible(bool visible)
         {
             FieldInfo[] fields = options.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public);
 
-            for (int i = 0; i < fields.Length; ++i)
+            string[] keyFieldNames = new string[]
             {
-                string[] keyFieldNames = new string[]
-                {
                     nameof(options.nameKey),
                     nameof(options.positionKey),
                     nameof(options.rotationKey),
                     nameof(options.sceneKey),
                     nameof(options.lootTableKey)
-                };
+            };
+            for (int i = 0; i < fields.Length; ++i)
+            {
                 if (keyFieldNames.Contains<string>(fields[i].Name))
                 {
                     options.SetFieldVisible(fields[i], visible);

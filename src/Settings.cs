@@ -52,12 +52,11 @@ namespace CoordinatesGrabber
 
 	internal static class Settings
 	{
-		internal static GrabberSettings options;
+		internal static GrabberSettings options = new GrabberSettings();
 
 		public static void OnLoad()
 		{
-			options = new GrabberSettings();
-			options.AddToModSettings("Coordinate Grabber");
+			options.AddToModSettings("Coordinates Grabber");
 			SetKeySettingsVisible(options.useKeyPresses);
 			SetDeleteSettingsVisible(options.useDeleteFunction);
 		}

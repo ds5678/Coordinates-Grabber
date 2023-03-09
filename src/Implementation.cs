@@ -15,7 +15,7 @@ namespace CoordinatesGrabber
 	}
 	internal class Implementation : MelonMod
 	{
-		public override void OnApplicationStart()
+		public override void OnInitializeMelon()
 		{
 			Debug.Log($"[{Info.Name}] Version {Info.Version} loaded!");
 			Settings.OnLoad();

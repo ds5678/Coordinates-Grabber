@@ -38,7 +38,7 @@ namespace CoordinatesGrabber
 		internal static GrabberMode currentMode { get; set; } = GrabberMode.None;
 		internal static GameObject? lookingAt { get; set; } = null;
 
-		internal static UILabel? hudLabel = null;
+		internal static UILabel hudLabel = new();
 
 		internal static void ApplyKeyPress(GrabberMode modeAssociatedWithKey)
 		{
@@ -182,7 +182,7 @@ namespace CoordinatesGrabber
 
 	internal class LootTableHelper
 	{
-		internal static string GetLootTableName(Container container)
+		internal static string? GetLootTableName(Container container)
 		{
 			if (container is null) return null;
 

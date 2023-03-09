@@ -42,16 +42,16 @@ namespace CoordinatesGrabber
 		[Description("The key you press to toggle loot table mode.")]
 		public KeyCode deleteKey = KeyCode.Delete;
 
-		protected override void OnChange(FieldInfo field, object oldValue, object newValue)
+		protected override void OnChange(FieldInfo field, object? oldValue, object? newValue)
 		{
-			if (field.Name == nameof(useKeyPresses)) Settings.SetKeySettingsVisible((bool)newValue);
-			else if (field.Name == nameof(useDeleteFunction)) Settings.SetDeleteSettingsVisible((bool)newValue);
+			if (field.Name == nameof(useKeyPresses) && newValue != null) Settings.SetKeySettingsVisible((bool)newValue);
+			else if (field.Name == nameof(useDeleteFunction) && newValue != null) Settings.SetDeleteSettingsVisible((bool)newValue);
 		}
 	}
 
 	internal static class Settings
 	{
-		internal static GrabberSettings options = new GrabberSettings();
+		internal static GrabberSettings options = new();
 
 		public static void OnLoad()
 		{
@@ -81,7 +81,6 @@ namespace CoordinatesGrabber
 		}
 		internal static void SetDeleteSettingsVisible(bool visible)
 		{
-			FieldInfo[] fields = options.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public);
 			foreach (FieldInfo field in options.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public))
 			{
 				if (nameof(options.deleteKey) == field.Name)

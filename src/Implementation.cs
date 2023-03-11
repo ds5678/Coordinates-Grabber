@@ -20,7 +20,5 @@ namespace CoordinatesGrabber
 			Debug.Log($"[{Info.Name}] Version {Info.Version} loaded!");
 			Settings.OnLoad();
 		}
-
-		internal static string GetModsFolderPath() => MelonEnvironment.ModsDirectory;
 	}
 }

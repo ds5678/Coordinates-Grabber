@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using Il2Cpp;
+using MelonLoader.Utils;
 using UnityEngine;
 using CustomInput = KeyboardUtilities.InputManager;
 
@@ -32,6 +33,7 @@ namespace CoordinatesGrabber
 		LootTable
 	}
 
+	[HarmonyPatch]
 	internal class KeyTracker
 	{
 		//		internal static bool useKeyPresses { get; set; } = false;
@@ -48,12 +50,9 @@ namespace CoordinatesGrabber
 			}
 			else
 			{
+				HUDMessage.AddMessage("Mode: "+ modeAssociatedWithKey.ToString(),0.5f);
 				currentMode = modeAssociatedWithKey;
-				hudLabel.enabled = false;
-				hudLabel.text = "";
-				lookingAt = null;
-
-
+				ResetLooatingAt();
 			}
 		}
 
@@ -76,6 +75,23 @@ namespace CoordinatesGrabber
 					ApplyKeyPress((GrabberMode)Modulo(newPosition));
 				}
 			}
+		}
+
+		internal static void ResetLooatingAt()
+		{
+			hudLabel.enabled = false;
+			hudLabel.text = "";
+			lookingAt = null;
+		}
+
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(Panel_HUD), nameof(Panel_HUD.Initialize))]
+		public static void Panel_HUD_Initialize_Postfix(Panel_HUD __instance)
+		{
+			hudLabel = UILabel.Instantiate<UILabel>(__instance.m_Label_SurvivalTime, __instance.m_Label_SurvivalTime.transform.parent);
+			hudLabel.capsLock = false;
+			hudLabel.name = "CoordGrabberLabel";
+
 		}
 	}
 
@@ -126,7 +142,6 @@ namespace CoordinatesGrabber
 
 			SaveInformation(saveToFile);
 		}
-
 		private static void SaveInformation(bool saveToFile)
 		{
 			float pickupRange = GameManager.GetGlobalParameters().m_MaxPickupRange;
@@ -143,17 +158,17 @@ namespace CoordinatesGrabber
 				case GrabberMode.LootTable:
 					GameObject? gameObject1 = GameManager.GetPlayerManagerComponent().GetInteractiveObjectUnderCrosshairs(pickupRange);
 
-					if (gameObject1 is null) return;
+					if (gameObject1 == null) return;
 
 					Container container = gameObject1.GetComponentInChildren<Container>();
-					if (container is null) return;
+					if (container == null) return;
 
 					line = "loottable=" + LootTableHelper.GetLootTableName(container);
 					RecordData(line, "LootTable Definition", saveToFile);
 					return;
 				default: //Name, Position, or Rotation
 					GameObject? gameObject2 = GameManager.GetPlayerManagerComponent().GetInteractiveObjectUnderCrosshairs(pickupRange);
-					if (gameObject2 is null) return;
+					if (gameObject2 == null) return;
 
 					line = "item=" + gameObject2.name + " p=" + FormatHelper.FormatVector(gameObject2.transform.position) + " r=" + FormatHelper.FormatVector(gameObject2.transform.rotation.eulerAngles) + " c=100";
 					RecordData(line, "Item Definition", saveToFile);
@@ -163,12 +178,11 @@ namespace CoordinatesGrabber
 		private static void CopyToClipboard(string line, string informationType)
 		{
 			GUIUtility.systemCopyBuffer = line;
-
 			HUDMessage.AddMessage(informationType + " copied to clipboard");
 		}
 		private static void AppendToFile(string line, string informationType)
 		{
-			StreamWriter file = File.AppendText(Path.Combine(Implementation.GetModsFolderPath(), @"Coordinates-Grabber-Output.txt"));
+			StreamWriter file = File.AppendText(Path.Combine(MelonEnvironment.ModsDirectory, @"Coordinates-Grabber-Output.txt"));
 			file.WriteLine(line);
 			file.Close();
 			HUDMessage.AddMessage(informationType + " appended to file");
@@ -182,9 +196,9 @@ namespace CoordinatesGrabber
 
 	internal class LootTableHelper
 	{
-		internal static string? GetLootTableName(Container container)
+		internal static string? GetLootTableName(Container? container)
 		{
-			if (container is null) return null;
+			if (container == null) return null;
 
 			if (container.IsLocked() && container.m_LockedLootTableData != null) return container.m_LockedLootTableData.name;
 
@@ -197,43 +211,48 @@ namespace CoordinatesGrabber
 	[HarmonyPatch(typeof(PlayerManager), nameof(PlayerManager.GetInteractiveObjectUnderCrosshairs), new Type[] { typeof(float) })]
 	internal class GetInteractiveObjectUnderCrosshairs
 	{
-		public static void Postfix(PlayerManager __instance, ref GameObject __result)
+		public static void Postfix(ref GameObject? __result)
 		{
-
 			if (__result == null || string.IsNullOrWhiteSpace(GameManager.m_ActiveScene))
 			{
-				KeyTracker.hudLabel.enabled = false;
-				KeyTracker.hudLabel.text = "";
-				KeyTracker.lookingAt = null;
+				KeyTracker.ResetLooatingAt();
 				return;
 			}
-			if (
-				KeyTracker.lookingAt == __result
-				|| KeyTracker.currentMode == GrabberMode.None)
+
+			if (Settings.options.useDeleteFunction && CustomInput.GetKeyDown(Settings.options.deleteKey))
+			{
+				UnityEngine.Object.Destroy(__result);
+				KeyTracker.ResetLooatingAt();
+				__result = null;
+				return;
+			}
+
+			if (KeyTracker.lookingAt == __result || KeyTracker.currentMode == GrabberMode.None)
 			{
 				return;
 			}
-			string outputMsg = "";
+
+			string outputMsg = string.Empty;
 
 			switch (KeyTracker.currentMode)
 			{
 				case GrabberMode.Name:
-					outputMsg += "\nname = " + __result.name;
+					outputMsg = "\nname = " + __result.name;
 					break;
 				case GrabberMode.Position:
-					outputMsg += "\nposition = " + FormatHelper.FormatVector(__result.transform.position);
+					outputMsg = "\nposition = " + FormatHelper.FormatVector(__result.transform.position);
 					break;
 				case GrabberMode.Rotation:
-					outputMsg += "\nrotation = " + FormatHelper.FormatVector(__result.transform.rotation.eulerAngles);
+					outputMsg = "\nrotation = " + FormatHelper.FormatVector(__result.transform.rotation.eulerAngles);
 					break;
 				case GrabberMode.Scene:
-					outputMsg += "\nscene = " + GameManager.m_ActiveScene;
+					outputMsg = "\nscene = " + GameManager.m_ActiveScene;
 					break;
 				case GrabberMode.LootTable:
 					Container container = __result.GetComponentInChildren<Container>();
 					if (container != null)
 					{
-						outputMsg += "\nloottable = " + LootTableHelper.GetLootTableName(container);
+						outputMsg = "\nloottable = " + LootTableHelper.GetLootTableName(container);
 					}
 					else
 					{
@@ -242,31 +261,13 @@ namespace CoordinatesGrabber
 					break;
 			}
 
-
-			if (outputMsg != null)
+			if (!string.IsNullOrWhiteSpace(outputMsg))
 			{
 				KeyTracker.lookingAt = __result;
 				KeyTracker.hudLabel.enabled = true;
 				KeyTracker.hudLabel.text = outputMsg;
-
 			}
-
-			if (Settings.options.useDeleteFunction && CustomInput.GetKeyDown(Settings.options.deleteKey))
-			{
-				UnityEngine.Object.Destroy(__result);
-			}
-
 		}
 	}
 
-	[HarmonyPatch(typeof(Panel_HUD), nameof(Panel_HUD.Initialize))]
-	internal class Panel_HUD_Initialize
-	{
-		public static void Postfix(Panel_HUD __instance)
-		{
-			KeyTracker.hudLabel = UILabel.Instantiate<UILabel>(__instance.m_Label_SurvivalTime, __instance.m_Label_SurvivalTime.transform.parent);
-			KeyTracker.hudLabel.capsLock = false;
-			KeyTracker.hudLabel.name = "CoordGrabberLabel";
-		}
-	}
 }

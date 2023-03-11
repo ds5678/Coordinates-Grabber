@@ -44,8 +44,15 @@ namespace CoordinatesGrabber
 
 		protected override void OnChange(FieldInfo field, object? oldValue, object? newValue)
 		{
-			if (field.Name == nameof(useKeyPresses) && newValue != null) Settings.SetKeySettingsVisible((bool)newValue);
-			else if (field.Name == nameof(useDeleteFunction) && newValue != null) Settings.SetDeleteSettingsVisible((bool)newValue);
+			if (field.Name == nameof(useKeyPresses))
+			{
+				Settings.SetKeySettingsVisible((bool)newValue!);
+			}
+			else if
+				(field.Name == nameof(useDeleteFunction))
+			{
+				Settings.SetDeleteSettingsVisible((bool)newValue!);
+			}
 		}
 	}
 

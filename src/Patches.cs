@@ -36,7 +36,6 @@ namespace CoordinatesGrabber
 	[HarmonyPatch]
 	internal class KeyTracker
 	{
-		//		internal static bool useKeyPresses { get; set; } = false;
 		internal static GrabberMode currentMode { get; set; } = GrabberMode.None;
 		internal static GameObject? lookingAt { get; set; } = null;
 
@@ -52,7 +51,7 @@ namespace CoordinatesGrabber
 			{
 				HUDMessage.AddMessage("Mode: "+ modeAssociatedWithKey.ToString(),0.5f);
 				currentMode = modeAssociatedWithKey;
-				ResetLooatingAt();
+				ResetLookingAt();
 			}
 		}
 
@@ -77,7 +76,7 @@ namespace CoordinatesGrabber
 			}
 		}
 
-		internal static void ResetLooatingAt()
+		internal static void ResetLookingAt()
 		{
 			hudLabel.enabled = false;
 			hudLabel.text = "";
@@ -215,14 +214,14 @@ namespace CoordinatesGrabber
 		{
 			if (__result == null || string.IsNullOrWhiteSpace(GameManager.m_ActiveScene))
 			{
-				KeyTracker.ResetLooatingAt();
+				KeyTracker.ResetLookingAt();
 				return;
 			}
 
 			if (Settings.options.useDeleteFunction && CustomInput.GetKeyDown(Settings.options.deleteKey))
 			{
 				UnityEngine.Object.Destroy(__result);
-				KeyTracker.ResetLooatingAt();
+				KeyTracker.ResetLookingAt();
 				__result = null;
 				return;
 			}

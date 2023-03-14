@@ -49,7 +49,7 @@ namespace CoordinatesGrabber
 			}
 			else
 			{
-				HUDMessage.AddMessage("Mode: "+ modeAssociatedWithKey.ToString(),0.5f);
+				HUDMessage.AddMessage("Mode: " + modeAssociatedWithKey.ToString(), 0.5f);
 				currentMode = modeAssociatedWithKey;
 				ResetLookingAt();
 			}
@@ -231,7 +231,7 @@ namespace CoordinatesGrabber
 				return;
 			}
 
-			string outputMsg = string.Empty;
+			string outputMsg;
 
 			switch (KeyTracker.currentMode)
 			{
@@ -258,15 +258,14 @@ namespace CoordinatesGrabber
 						return;
 					}
 					break;
+				default:
+					return;
 			}
 
-			if (!string.IsNullOrWhiteSpace(outputMsg))
-			{
-				KeyTracker.lookingAt = __result;
-				KeyTracker.hudLabel.enabled = true;
-				KeyTracker.hudLabel.text = outputMsg;
-			}
+			KeyTracker.lookingAt = __result;
+			KeyTracker.hudLabel.enabled = true;
+			KeyTracker.hudLabel.text = outputMsg;
+
 		}
 	}
-
 }

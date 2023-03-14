@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
-using System.IO;
+using Il2Cpp;
+using MelonLoader.Utils;
 using UnityEngine;
 using CustomInput = KeyboardUtilities.InputManager;
 
@@ -32,10 +33,13 @@ namespace CoordinatesGrabber
 		LootTable
 	}
 
+	[HarmonyPatch]
 	internal class KeyTracker
 	{
-		internal const bool useKeyPresses = false;
-		internal static GrabberMode currentMode = GrabberMode.None;
+		internal static GrabberMode currentMode { get; set; } = GrabberMode.None;
+		internal static GameObject? lookingAt { get; set; } = null;
+
+		internal static UILabel hudLabel = new();
 
 		internal static void ApplyKeyPress(GrabberMode modeAssociatedWithKey)
 		{
@@ -45,7 +49,9 @@ namespace CoordinatesGrabber
 			}
 			else
 			{
+				HUDMessage.AddMessage("Mode: " + modeAssociatedWithKey.ToString(), 0.5f);
 				currentMode = modeAssociatedWithKey;
+				ResetLookingAt();
 			}
 		}
 
@@ -63,12 +69,32 @@ namespace CoordinatesGrabber
 				int delta = (int)CustomInput.GetMouseScrollDelta()[1];
 				int currentPosition = (int)currentMode;
 				int newPosition = currentPosition - delta;
-				currentMode = (GrabberMode)Modulo(newPosition);
+				if (delta != 0)
+				{
+					ApplyKeyPress((GrabberMode)Modulo(newPosition));
+				}
 			}
+		}
+
+		internal static void ResetLookingAt()
+		{
+			hudLabel.enabled = false;
+			hudLabel.text = "";
+			lookingAt = null;
+		}
+
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(Panel_HUD), nameof(Panel_HUD.Initialize))]
+		public static void Panel_HUD_Initialize_Postfix(Panel_HUD __instance)
+		{
+			hudLabel = UILabel.Instantiate<UILabel>(__instance.m_Label_SurvivalTime, __instance.m_Label_SurvivalTime.transform.parent);
+			hudLabel.capsLock = false;
+			hudLabel.name = "CoordGrabberLabel";
+
 		}
 	}
 
-	[HarmonyPatch(typeof(GameManager), "Update")]
+	[HarmonyPatch(typeof(GameManager), nameof(GameManager.Update))]
 	internal class CheckForKeyPresses
 	{
 		private static void Postfix()
@@ -101,7 +127,7 @@ namespace CoordinatesGrabber
 		}
 	}
 
-	[HarmonyPatch(typeof(InputManager), "ProcessInput")]
+	[HarmonyPatch(typeof(InputManager), nameof(InputManager.ProcessInput))]
 	internal class InputManager_ProcessInput
 	{
 		public static void Postfix()
@@ -111,13 +137,14 @@ namespace CoordinatesGrabber
 			bool altDown = Settings.options.useKeyPresses && (CustomInput.GetKeyDown(KeyCode.LeftAlt) || CustomInput.GetKeyDown(KeyCode.RightAlt));
 			bool saveToFile = middleMouseDown || altDown;
 
-			if ( (!controlDown && !saveToFile) || InterfaceManager.IsOverlayActiveImmediate() ) return;
+			if ((!controlDown && !saveToFile) || InterfaceManager.IsOverlayActiveImmediate()) return;
 
 			SaveInformation(saveToFile);
 		}
-
 		private static void SaveInformation(bool saveToFile)
 		{
+			float pickupRange = GameManager.GetGlobalParameters().m_MaxPickupRange;
+
 			string line;
 			switch (KeyTracker.currentMode)
 			{
@@ -128,19 +155,19 @@ namespace CoordinatesGrabber
 					RecordData(line, "Scene Definition", saveToFile);
 					return;
 				case GrabberMode.LootTable:
-					GameObject gameObject1 = GameManager.GetPlayerManagerComponent()?.m_InteractiveObjectNearCrosshair;
+					GameObject? gameObject1 = GameManager.GetPlayerManagerComponent().GetInteractiveObjectUnderCrosshairs(pickupRange);
 
-					if (gameObject1 is null) return;
+					if (gameObject1 == null) return;
 
 					Container container = gameObject1.GetComponentInChildren<Container>();
-					if (container is null) return;
+					if (container == null) return;
 
 					line = "loottable=" + LootTableHelper.GetLootTableName(container);
 					RecordData(line, "LootTable Definition", saveToFile);
 					return;
 				default: //Name, Position, or Rotation
-					GameObject gameObject2 = GameManager.GetPlayerManagerComponent().m_InteractiveObjectNearCrosshair;
-					if (gameObject2 is null) return;
+					GameObject? gameObject2 = GameManager.GetPlayerManagerComponent().GetInteractiveObjectUnderCrosshairs(pickupRange);
+					if (gameObject2 == null) return;
 
 					line = "item=" + gameObject2.name + " p=" + FormatHelper.FormatVector(gameObject2.transform.position) + " r=" + FormatHelper.FormatVector(gameObject2.transform.rotation.eulerAngles) + " c=100";
 					RecordData(line, "Item Definition", saveToFile);
@@ -150,12 +177,11 @@ namespace CoordinatesGrabber
 		private static void CopyToClipboard(string line, string informationType)
 		{
 			GUIUtility.systemCopyBuffer = line;
-
 			HUDMessage.AddMessage(informationType + " copied to clipboard");
 		}
 		private static void AppendToFile(string line, string informationType)
 		{
-			StreamWriter file = File.AppendText(Path.Combine(Implementation.GetModsFolderPath(), @"Coordinates-Grabber-Output.txt"));
+			StreamWriter file = File.AppendText(Path.Combine(MelonEnvironment.ModsDirectory, @"Coordinates-Grabber-Output.txt"));
 			file.WriteLine(line);
 			file.Close();
 			HUDMessage.AddMessage(informationType + " appended to file");
@@ -169,51 +195,77 @@ namespace CoordinatesGrabber
 
 	internal class LootTableHelper
 	{
-		internal static string GetLootTableName(Container container)
+		internal static string? GetLootTableName(Container? container)
 		{
-			if (container is null) return null;
+			if (container == null) return null;
 
-			if (container.IsLocked() && container.m_LockedLootTablePrefab != null) return container.m_LockedLootTablePrefab.name;
+			if (container.IsLocked() && container.m_LockedLootTableData != null) return container.m_LockedLootTableData.name;
 
-			if (container.m_LootTablePrefab != null) return container.m_LootTablePrefab.name;
+			if (container.m_LootTableData != null) return container.m_LootTableData.name;
 
 			return null;
 		}
 	}
 
-	[HarmonyPatch(typeof(PlayerManager), "GetInteractiveObjectDisplayText")]
-	internal class PlayerManager_GetInteractiveObjectDisplayText
+	[HarmonyPatch(typeof(PlayerManager), nameof(PlayerManager.GetInteractiveObjectUnderCrosshairs), new Type[] { typeof(float) })]
+	internal class GetInteractiveObjectUnderCrosshairs
 	{
-		public static void Postfix(PlayerManager __instance, ref string __result)
+		public static void Postfix(ref GameObject? __result)
 		{
-			if (__instance?.m_InteractiveObjectUnderCrosshair?.name is null) return;
-			if (__result is null || string.IsNullOrWhiteSpace(GameManager.m_ActiveScene)) return;
+			if (__result == null || string.IsNullOrWhiteSpace(GameManager.m_ActiveScene))
+			{
+				KeyTracker.ResetLookingAt();
+				return;
+			}
+
+			if (Settings.options.useDeleteFunction && CustomInput.GetKeyDown(Settings.options.deleteKey))
+			{
+				UnityEngine.Object.Destroy(__result);
+				KeyTracker.ResetLookingAt();
+				__result = null;
+				return;
+			}
+
+			if (KeyTracker.lookingAt == __result || KeyTracker.currentMode == GrabberMode.None)
+			{
+				return;
+			}
+
+			string outputMsg;
+
 			switch (KeyTracker.currentMode)
 			{
 				case GrabberMode.Name:
-					__result += "\nname = " + __instance.m_InteractiveObjectUnderCrosshair.name;
+					outputMsg = "\nname = " + __result.name;
 					break;
 				case GrabberMode.Position:
-					__result += "\nposition = " + FormatHelper.FormatVector(__instance.m_InteractiveObjectUnderCrosshair.transform.position);
+					outputMsg = "\nposition = " + FormatHelper.FormatVector(__result.transform.position);
 					break;
 				case GrabberMode.Rotation:
-					__result += "\nrotation = " + FormatHelper.FormatVector(__instance.m_InteractiveObjectUnderCrosshair.transform.rotation.eulerAngles);
+					outputMsg = "\nrotation = " + FormatHelper.FormatVector(__result.transform.rotation.eulerAngles);
 					break;
 				case GrabberMode.Scene:
-					__result += "\nscene = " + GameManager.m_ActiveScene;
+					outputMsg = "\nscene = " + GameManager.m_ActiveScene;
 					break;
 				case GrabberMode.LootTable:
-					Container container = __instance.m_InteractiveObjectUnderCrosshair.GetComponentInChildren<Container>();
+					Container container = __result.GetComponentInChildren<Container>();
 					if (container != null)
 					{
-						__result += "\nloottable = " + LootTableHelper.GetLootTableName(container);
+						outputMsg = "\nloottable = " + LootTableHelper.GetLootTableName(container);
+					}
+					else
+					{
+						return;
 					}
 					break;
+				default:
+					return;
 			}
-			if (Settings.options.useDeleteFunction && CustomInput.GetKeyDown(Settings.options.deleteKey))
-			{
-				UnityEngine.Object.Destroy(__instance.m_InteractiveObjectUnderCrosshair);
-			}
+
+			KeyTracker.lookingAt = __result;
+			KeyTracker.hudLabel.enabled = true;
+			KeyTracker.hudLabel.text = outputMsg;
+
 		}
 	}
 }
